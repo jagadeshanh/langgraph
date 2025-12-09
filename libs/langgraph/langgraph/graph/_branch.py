@@ -199,9 +199,21 @@ class BranchSpec(NamedTuple):
         if not isinstance(result, (list, tuple)):
             result = [result]
         if self.ends:
-            destinations: Sequence[Send | str] = [
-                r if isinstance(r, Send) else self.ends[r] for r in result
-            ]
+            destinations: list[Send | str] = []
+            ends_values = set(self.ends.values())
+            for r in result:
+                if isinstance(r, Send):
+                    destinations.append(r)
+                else:
+                    try:
+                        destinations.append(self.ends[r])
+                    except KeyError:
+                        if r in ends_values:
+                            destinations.append(r)
+                        else:
+                            raise ValueError(
+                                f"Branch returned unknown branch key: {r!r}"
+                            )
         else:
             destinations = cast(Sequence[Send | str], result)
         if any(dest is None or dest == START for dest in destinations):
